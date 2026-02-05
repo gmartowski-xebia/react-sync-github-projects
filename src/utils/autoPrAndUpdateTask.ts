@@ -11,8 +11,19 @@ const {
   BASE_BRANCH,
 } = process.env;
 
-if (!GTH_TOKEN || !OWNER || !REPO || !PROJECT_ID || !ITEM_ID || !STATUS_FIELD_ID || !REVIEW_OPTION_ID || !BASE_BRANCH) {
-  throw new Error('Brakuje wymaganych zmiennych środowiskowych!');
+const missingVars = [
+  ['GTH_TOKEN', GTH_TOKEN],
+  ['OWNER', OWNER],
+  ['REPO', REPO],
+  ['PROJECT_ID', PROJECT_ID],
+  ['ITEM_ID', ITEM_ID],
+  ['STATUS_FIELD_ID', STATUS_FIELD_ID],
+  ['REVIEW_OPTION_ID', REVIEW_OPTION_ID],
+  ['BASE_BRANCH', BASE_BRANCH],
+].filter(([name, value]) => !value).map(([name]) => name);
+
+if (missingVars.length > 0) {
+  throw new Error(`Brakuje wymaganych zmiennych środowiskowych: ${missingVars.join(', ')}`);
 }
 
 async function main() {
