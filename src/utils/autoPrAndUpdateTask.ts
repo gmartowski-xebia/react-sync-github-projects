@@ -1,13 +1,11 @@
-import { createPullRequest, updateTaskStatus } from './githubProjectTasks';
+import { createPullRequest, updateTaskStatus, fetchTaskById } from './githubProjectTasks';
+import { graphql } from '@octokit/graphql';
 
 const {
   GTH_TOKEN,
   OWNER,
   REPO,
   PROJECT_ID,
-  ITEM_ID,
-  STATUS_FIELD_ID,
-  REVIEW_OPTION_ID,
   BASE_BRANCH,
 } = process.env;
 
@@ -16,9 +14,6 @@ const missingVars = [
   ['OWNER', OWNER],
   ['REPO', REPO],
   ['PROJECT_ID', PROJECT_ID],
-  ['ITEM_ID', ITEM_ID],
-  ['STATUS_FIELD_ID', STATUS_FIELD_ID],
-  ['REVIEW_OPTION_ID', REVIEW_OPTION_ID],
   ['BASE_BRANCH', BASE_BRANCH],
 ].filter(([name, value]) => !value).map(([name]) => name);
 
@@ -26,8 +21,79 @@ if (missingVars.length > 0) {
   throw new Error(`Brakuje wymaganych zmiennych środowiskowych: ${missingVars.join(', ')}`);
 }
 
+const graphqlWithAuth = graphql.defaults({ headers: { authorization: `token ${GTH_TOKEN}` } });
+
+async function getStatusFieldId(projectId: string): Promise<string> {
+  const query = `
+    query($projectId: ID!) {
+      node(id: $projectId) {
+        ... on ProjectV2 {
+          fields(first: 20) {
+            nodes {
+              ... on ProjectV2SingleSelectField {
+                id
+                name
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+  const result = await graphqlWithAuth(query, { projectId }) as any;
+  const statusField = result.node.fields.nodes.find((f: any) => f.name === 'Status');
+  if (!statusField) throw new Error('Nie znaleziono pola Status w projekcie!');
+  return statusField.id;
+}
+
+async function getReviewOptionId(statusFieldId: string): Promise<string> {
+  const query = `
+    query($fieldId: ID!) {
+      node(id: $fieldId) {
+        ... on ProjectV2SingleSelectField {
+          options {
+            id
+            name
+          }
+        }
+      }
+    }
+  `;
+  const result = await graphqlWithAuth(query, { fieldId: statusFieldId }) as any;
+  const reviewOption = result.node.options.find((o: any) => o.name === 'Review');
+  if (!reviewOption) throw new Error('Nie znaleziono opcji Review w polu Status!');
+  return reviewOption.id;
+}
+
+async function getItemId(projectId: string, branchName: string): Promise<string> {
+  // Szukaj taska powiązanego z numerem issue/PR w nazwie brancha, np. feature/123-nazwa
+  const match = branchName.match(/(\d+)/);
+  if (!match) throw new Error('Branch nie zawiera numeru issue/PR!');
+  const issueNumber = match[1];
+  const query = `
+    query($projectId: ID!) {
+      node(id: $projectId) {
+        ... on ProjectV2 {
+          items(first: 50) {
+            nodes {
+              id
+              content {
+                ... on Issue { number }
+                ... on PullRequest { number }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+  const result = await graphqlWithAuth(query, { projectId }) as any;
+  const item = result.node.items.nodes.find((i: any) => i.content?.number?.toString() === issueNumber);
+  if (!item) throw new Error(`Nie znaleziono taska powiązanego z numerem ${issueNumber} w projekcie!`);
+  return item.id;
+}
+
 async function main() {
-  // 1. Utwórz Pull Request z feature brancha na main
   const branchName = process.env.GITHUB_REF?.replace('refs/heads/', '') || '';
   if (!branchName || branchName === BASE_BRANCH) {
     console.log('Nie tworzę PR dla brancha głównego lub nieznanego.');
@@ -48,12 +114,16 @@ async function main() {
   });
   console.log(`PR utworzony: ${pr.url}`);
 
-  // 2. Zaktualizuj status taska w projekcie na "Review"
+  // Dynamiczne pobieranie ID taska, pola Status i opcji Review
+  const statusFieldId = await getStatusFieldId(PROJECT_ID as string);
+  const reviewOptionId = await getReviewOptionId(statusFieldId);
+  const itemId = await getItemId(PROJECT_ID as string, branchName);
+
   await updateTaskStatus({
     projectId: PROJECT_ID as string,
-    itemId: ITEM_ID as string,
-    statusFieldId: STATUS_FIELD_ID as string,
-    newStatus: REVIEW_OPTION_ID as string,
+    itemId,
+    statusFieldId,
+    newStatus: reviewOptionId,
     comment: `PR utworzony: ${pr.url}`,
   });
   console.log('Status taska zaktualizowany na Review.');
