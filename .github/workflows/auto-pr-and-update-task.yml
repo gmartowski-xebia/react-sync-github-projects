@@ -28,4 +28,5 @@ jobs:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
           BASE_BRANCH: main
         run: |
-          npx ts-node src/utils/autoPrAndUpdateTask.ts
+          npm install --save-dev tsx
+          npx tsx src/utils/autoPrAndUpdateTask.ts
