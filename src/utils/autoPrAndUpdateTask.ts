@@ -1,7 +1,7 @@
 import { createPullRequest, updateTaskStatus } from './githubProjectTasks';
 
 const {
-  GITHUB_TOKEN,
+  GTH_TOKEN,
   OWNER,
   REPO,
   PROJECT_ID,
@@ -11,7 +11,7 @@ const {
   BASE_BRANCH,
 } = process.env;
 
-if (!GITHUB_TOKEN || !OWNER || !REPO || !PROJECT_ID || !ITEM_ID || !STATUS_FIELD_ID || !REVIEW_OPTION_ID || !BASE_BRANCH) {
+if (!GTH_TOKEN || !OWNER || !REPO || !PROJECT_ID || !ITEM_ID || !STATUS_FIELD_ID || !REVIEW_OPTION_ID || !BASE_BRANCH) {
   throw new Error('Brakuje wymaganych zmiennych środowiskowych!');
 }
 

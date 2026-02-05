@@ -22,13 +22,10 @@ jobs:
 
       - name: Create Pull Request & Update Project Task
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GTH_TOKEN: ${{ secrets.GTH_TOKEN }}
           OWNER: ${{ secrets.REPO_OWNER }}
           REPO: ${{ secrets.REPO_NAME }}
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
-          ITEM_ID: ${{ secrets.ITEM_ID }}
-          STATUS_FIELD_ID: ${{ secrets.STATUS_FIELD_ID }}
-          REVIEW_OPTION_ID: ${{ secrets.REVIEW_OPTION_ID }}
           BASE_BRANCH: main
         run: |
-          npx tsx src/utils/autoPrAndUpdateTask.ts
+          npx ts-node src/utils/autoPrAndUpdateTask.ts

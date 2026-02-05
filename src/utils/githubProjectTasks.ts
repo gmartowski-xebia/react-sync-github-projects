@@ -1,7 +1,7 @@
 // src/utils/githubProjectTasks.ts
 // Utility for interacting with GitHub Projects v2 tasks using Octokit (REST & GraphQL)
 // Requires: npm install @octokit/core @octokit/graphql
-// Usage: Set GITHUB_TOKEN in your environment variables (see below)
+// Usage: Set GTH_TOKEN in your environment variables (see below)
 
 import { Octokit } from '@octokit/core';
 import { graphql } from '@octokit/graphql';
@@ -24,13 +24,13 @@ export type Task = {
 };
 
 // --- Environment variable check ---
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-if (!GITHUB_TOKEN) {
-  throw new Error('GITHUB_TOKEN is not set. Please set it in your environment variables.');
+const GTH_TOKEN = process.env.GTH_TOKEN;
+if (!GTH_TOKEN) {
+  throw new Error('GTH_TOKEN is not set. Please set it in your environment variables.');
 }
 
-const octokit = new Octokit({ auth: GITHUB_TOKEN });
-const graphqlWithAuth = graphql.defaults({ headers: { authorization: `token ${GITHUB_TOKEN}` } });
+const octokit = new Octokit({ auth: GTH_TOKEN });
+const graphqlWithAuth = graphql.defaults({ headers: { authorization: `token ${GTH_TOKEN}` } });
 
 // --- Fetch a task from a GitHub Project by item ID ---
 export async function fetchTaskById(projectId: string, itemId: string): Promise<Task> {
@@ -180,11 +180,11 @@ export async function createPullRequest({
  */
 
 /**
- * # Instructions for GITHUB_TOKEN
+ * # Instructions for GTH_TOKEN
  *
  * 1. Create a GitHub personal access token with "project" and "repo" scopes.
  * 2. Set it in your environment variables:
- *    - In CI: add as a secret (GITHUB_TOKEN)
- *    - Lokalnie: export GITHUB_TOKEN=your_token
+ *    - In CI: add as a secret (GTH_TOKEN)
+ *    - Lokalnie: export GTH_TOKEN=your_token
  * 3. Do not commit your token to the repository!
  */
