@@ -60,8 +60,12 @@ async function getReviewOptionId(statusFieldId: string): Promise<string> {
     }
   `;
   const result = await graphqlWithAuth(query, { fieldId: statusFieldId }) as any;
-  const reviewOption = result.node.options.find((o: any) => o.name === 'Review');
-  if (!reviewOption) throw new Error('Nie znaleziono opcji Review w polu Status!');
+  // Zmieniamy wyszukiwanie opcji na 'In review' zamiast 'Review'
+  const reviewOption = result.node.options.find((o: any) => o.name === 'In review');
+  if (!reviewOption) {
+    console.error('Dostępne opcje statusu:', result.node.options.map((o: any) => o.name));
+    throw new Error('Nie znaleziono opcji In review w polu Status!');
+  }
   return reviewOption.id;
 }
 
