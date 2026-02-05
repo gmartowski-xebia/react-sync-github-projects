@@ -151,16 +151,40 @@ export async function createPullRequest({
   body,
   draft = false,
 }: CreatePullRequestOptions): Promise<{ number: number; url: string }> {
-  const response = await octokit.request('POST /repos/{owner}/{repo}/pulls', {
-    owner,
-    repo,
-    head,
-    base,
-    title,
-    body,
-    draft,
-  });
-  return { number: response.data.number, url: response.data.html_url };
+  try {
+    const response = await octokit.request('POST /repos/{owner}/{repo}/pulls', {
+      owner,
+      repo,
+      head,
+      base,
+      title,
+      body,
+      draft,
+    });
+    return { number: response.data.number, url: response.data.html_url };
+  } catch (error: any) {
+    // Obsługa przypadku, gdy PR już istnieje
+    if (
+      error.status === 422 &&
+      error.response?.data?.errors?.some((e: any) =>
+        typeof e.message === 'string' && e.message.includes('A pull request already exists')
+      )
+    ) {
+      // Pobierz istniejący PR dla tego brancha
+      const prs = await octokit.request('GET /repos/{owner}/{repo}/pulls', {
+        owner,
+        repo,
+        head: `${owner}:${head}`,
+        base,
+        state: 'open',
+      });
+      if (prs.data.length > 0) {
+        return { number: prs.data[0].number, url: prs.data[0].html_url };
+      }
+      throw new Error('PR już istnieje, ale nie udało się go pobrać.');
+    }
+    throw error;
+  }
 }
 
 /**
