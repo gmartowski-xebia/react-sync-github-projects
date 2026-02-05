@@ -108,22 +108,30 @@ export async function updateTaskStatus({
 
   // 2. Optionally update description (if provided)
   if (description) {
-    await octokit.request('PATCH /repos/{owner}/{repo}/issues/{issue_number}', {
-      owner: '<owner>', // TODO: Replace with your repo owner
-      repo: '<repo>',   // TODO: Replace with your repo name
-      issue_number: parseInt(itemId, 10), // Only if item is an Issue
-      body: description,
-    });
+    if (itemId && typeof itemId === 'string' && !isNaN(Number(itemId))) {
+      await octokit.request('PATCH /repos/{owner}/{repo}/issues/{issue_number}', {
+        owner,
+        repo,
+        issue_number: parseInt(itemId, 10), // Only if item is an Issue
+        body: description,
+      });
+    } else {
+      console.warn('Pomijam aktualizację opisu, bo itemId nie jest numerem issue.');
+    }
   }
 
   // 3. Optionally add a comment (if provided)
   if (comment) {
-    await octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
-      owner: '<owner>', // TODO: Replace with your repo owner
-      repo: '<repo>',   // TODO: Replace with your repo name
-      issue_number: parseInt(itemId, 10), // Only if item is an Issue
-      body: comment,
-    });
+    if (itemId && typeof itemId === 'string' && !isNaN(Number(itemId))) {
+      await octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
+        owner,
+        repo,
+        issue_number: parseInt(itemId, 10), // Only if item is an Issue
+        body: comment,
+      });
+    } else {
+      console.warn('Pomijam dodanie komentarza, bo itemId nie jest numerem issue.');
+    }
   }
 }
 

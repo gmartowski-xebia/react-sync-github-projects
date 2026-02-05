@@ -1,5 +1,6 @@
 import { createPullRequest, updateTaskStatus, fetchTaskById } from './githubProjectTasks';
 import { graphql } from '@octokit/graphql';
+import { Octokit } from '@octokit/core';
 
 const {
   GTH_TOKEN,
@@ -97,6 +98,32 @@ async function getItemId(projectId: string, branchName: string): Promise<string>
   return item.id;
 }
 
+async function getBranchCommits(owner: string, repo: string, branch: string, token: string): Promise<string[]> {
+  const octokit = new Octokit({ auth: token });
+  const commits: string[] = [];
+  try {
+    const { data } = await octokit.request('GET /repos/{owner}/{repo}/commits', {
+      owner,
+      repo,
+      sha: branch,
+      per_page: 10,
+    });
+    for (const commit of data) {
+      commits.push(commit.commit.message);
+    }
+  } catch (err) {
+    console.warn('Nie udało się pobrać commitów:', err);
+  }
+  return commits;
+}
+
+async function generatePrBody(commits: string[]): Promise<string> {
+  // Tu można podłączyć API AI, np. OpenAI, do generowania opisu na podstawie commitów
+  // Na razie: proste podsumowanie
+  if (commits.length === 0) return 'Brak commitów do podsumowania.';
+  return `Podsumowanie zmian w PR:\n${commits.map((msg, i) => `- ${msg}`).join('\n')}`;
+}
+
 async function main() {
   const branchName = process.env.GITHUB_REF?.replace('refs/heads/', '') || '';
   if (!branchName || branchName === BASE_BRANCH) {
@@ -105,7 +132,8 @@ async function main() {
   }
 
   const prTitle = `Feature: ${branchName}`;
-  const prBody = 'Automatycznie utworzony PR oraz aktualizacja statusu taska w projekcie.';
+  const commits = await getBranchCommits(OWNER as string, REPO as string, branchName, GTH_TOKEN as string);
+  const prBody = await generatePrBody(commits);
 
   console.log('PR debug info:', {
     owner: OWNER,
