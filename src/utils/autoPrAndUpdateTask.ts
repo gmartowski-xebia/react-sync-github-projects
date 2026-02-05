@@ -103,6 +103,14 @@ async function main() {
   const prTitle = `Feature: ${branchName}`;
   const prBody = 'Automatycznie utworzony PR oraz aktualizacja statusu taska w projekcie.';
 
+  console.log('PR debug info:', {
+    owner: OWNER,
+    repo: REPO,
+    head: branchName,
+    base: BASE_BRANCH,
+    title: prTitle,
+    body: prBody,
+  });
   const pr = await createPullRequest({
     owner: OWNER as string,
     repo: REPO as string,
